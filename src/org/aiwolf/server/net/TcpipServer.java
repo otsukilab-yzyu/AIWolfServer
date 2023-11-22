@@ -50,9 +50,6 @@ import org.aiwolf.server.LostClientException;
  */
 public class TcpipServer implements GameServer {
 
-
-
-
 	/**
 	 * Server Port
 	 */
@@ -72,7 +69,6 @@ public class TcpipServer implements GameServer {
 	 *
 	 */
 	protected BidiMap<Socket, Agent> socketAgentMap;
-
 
 	/**
 	 * Current game data
@@ -111,7 +107,7 @@ public class TcpipServer implements GameServer {
 	 * @param port
 	 * @param limit
 	 */
-	public TcpipServer(int port, int limit, GameSetting gameSetting){
+	public TcpipServer(int port, int limit, GameSetting gameSetting) {
 		this.gameSetting = gameSetting;
 		this.port = port;
 		this.limit = limit;
@@ -126,7 +122,7 @@ public class TcpipServer implements GameServer {
 		serverListenerSet = new HashSet<>();
 //		serverLogger = AiWolfLoggerFactory.getLogger(loggerName);
 //		serverLogger.setLevel(Level.FINER);
-		//		try {
+		// try {
 //			serverLogger = AiWolfLoggerFactory.getLogger(loggerName, new File(loggerName+".log"));
 //			serverLogger.setLevel(Level.FINER);
 //		} catch (IOException e) {
@@ -143,58 +139,58 @@ public class TcpipServer implements GameServer {
 	 * @throws IOException
 	 * @throws SocketTimeoutException
 	 */
-	public void waitForConnection() throws IOException, SocketTimeoutException{
+	public void waitForConnection() throws IOException, SocketTimeoutException {
 //	    int timeout_msec = 1000*60*10; // time out in 10 miniutes
 //		serverLogger.info(String.format("Start Server@port %d\n", port));
 
-	    for(Socket sock:socketAgentMap.keySet()){
-	    	if(sock != null && sock.isConnected()){
-	    		sock.close();
-	    	}
-	    }
+		for (Socket sock : socketAgentMap.keySet()) {
+			if (sock != null && sock.isConnected()) {
+				sock.close();
+			}
+		}
 
-	    socketAgentMap.clear();
-	    nameMap.clear();
+		socketAgentMap.clear();
+		nameMap.clear();
 
 //		serverLogger.info(String.format("Waiting for connection...\n"));
-	    System.out.println("Waiting for connection...\n");
+		System.out.println("Waiting for connection...\n");
 
-	    serverSocket = new ServerSocket(port);
+		serverSocket = new ServerSocket(port);
 
-	    isWaitForClient = true;
-	    
-	    List<Agent> shuffledAgentList = new ArrayList<>();
-	    for(int i = 1; i <= limit; i++) {
-	    	shuffledAgentList.add(Agent.getAgent(i));
-	    }
-	    Collections.shuffle(shuffledAgentList);
+		isWaitForClient = true;
 
-	    while(socketAgentMap.size() < limit && isWaitForClient){
-	        Socket socket = serverSocket.accept();
+		List<Agent> shuffledAgentList = new ArrayList<>();
+		for (int i = 1; i <= limit; i++) {
+			shuffledAgentList.add(Agent.getAgent(i));
+		}
+		Collections.shuffle(shuffledAgentList);
 
-	        synchronized (socketAgentMap) {
-		        Agent agent = null;
+		while (socketAgentMap.size() < limit && isWaitForClient) {
+			Socket socket = serverSocket.accept();
+
+			synchronized (socketAgentMap) {
+				Agent agent = null;
 				for (int i = 0; i < limit; i++) {
-		        	if(!socketAgentMap.containsValue(shuffledAgentList.get(i))){
-		        		agent = shuffledAgentList.get(i);
-		        		break;
-		        	}
-		        }
-		        if(agent == null){
-		        	throw new IllegalPlayerNumException("Fail to create agent");
-		        }
+					if (!socketAgentMap.containsValue(shuffledAgentList.get(i))) {
+						agent = shuffledAgentList.get(i);
+						break;
+					}
+				}
+				if (agent == null) {
+					throw new IllegalPlayerNumException("Fail to create agent");
+				}
 				socketAgentMap.put(socket, agent);
 				String name = requestName(agent);
 				nameMap.put(agent, name);
 
-				for(ServerListener listener:serverListenerSet){
+				for (ServerListener listener : serverListenerSet) {
 					listener.connected(socket, agent, name);
 				}
-	        }
+			}
 
-	    }
-	    isWaitForClient = false;
-	    serverSocket.close();
+		}
+		isWaitForClient = false;
+		serverSocket.close();
 	}
 
 	/**
@@ -203,13 +199,13 @@ public class TcpipServer implements GameServer {
 	public void stopWaitingForConnection() {
 		isWaitForClient = false;
 		try {
-			if(serverSocket != null){
+			if (serverSocket != null) {
 				serverSocket.close();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		for(Socket s:socketAgentMap.keySet()){
+		for (Socket s : socketAgentMap.keySet()) {
 			try {
 				s.close();
 			} catch (IOException e) {
@@ -218,8 +214,6 @@ public class TcpipServer implements GameServer {
 		}
 		socketAgentMap.clear();
 	}
-
-
 
 	@Override
 	public List<Agent> getConnectedAgentList() {
@@ -230,31 +224,30 @@ public class TcpipServer implements GameServer {
 
 	/**
 	 * send data to client
+	 * 
 	 * @param agent
 	 * @param sendText
 	 * @TODO Whisperの際に毎回GameInfoを毎回送ってしまう問題の解決．必要が無ければGameInfoを送らなくする
 	 */
-	protected void send(Agent agent, Request request){
-		try{
+	protected void send(Agent agent, Request request) {
+		try {
 			String message;
-			if(request == Request.INITIALIZE){
+			if (request == Request.INITIALIZE) {
 				lastTalkIdxMap.clear();
 				lastWhisperIdxMap.clear();
 				Packet packet = new Packet(request, gameData.getGameInfoToSend(agent), gameSetting);
 				message = DataConverter.getInstance().convert(packet);
-			}
-			else if(request == Request.DAILY_INITIALIZE){
+			} else if (request == Request.DAILY_INITIALIZE) {
 				lastTalkIdxMap.clear();
 				lastWhisperIdxMap.clear();
 				Packet packet = new Packet(request, gameData.getGameInfoToSend(agent));
 				message = DataConverter.getInstance().convert(packet);
-			}
-			else if(request == Request.NAME || request == Request.ROLE){
+			} else if (request == Request.NAME || request == Request.ROLE) {
 				Packet packet = new Packet(request);
 				message = DataConverter.getInstance().convert(packet);
-			}
-			else if (request != Request.FINISH) {
-				// Packet packet = new Packet(request, gameData.getGameInfoToSend(agent), gameSetting);
+			} else if (request != Request.FINISH) {
+				// Packet packet = new Packet(request, gameData.getGameInfoToSend(agent),
+				// gameSetting);
 				// message = DataConverter.getInstance().convert(packet);
 				if (request == Request.VOTE && !gameData.getLatestVoteList().isEmpty()) {
 					// 追放再投票の場合，latestVoteListで直前の投票状況を知らせるためGameInfo入りのパケットにする
@@ -264,8 +257,8 @@ public class TcpipServer implements GameServer {
 					// 襲撃再投票の場合，latestAttackVoteListで直前の投票状況を知らせるためGameInfo入りのパケットにする
 					Packet packet = new Packet(request, gameData.getGameInfoToSend(agent));
 					message = DataConverter.getInstance().convert(packet);
-				} else if (gameData.getExecuted() != null
-						&& (request == Request.DIVINE || request == Request.GUARD || request == Request.WHISPER || request == Request.ATTACK)) {
+				} else if (gameData.getExecuted() != null && (request == Request.DIVINE || request == Request.GUARD
+						|| request == Request.WHISPER || request == Request.ATTACK)) {
 					// 追放後の各リクエストではlatestExecutedAgentで追放者を知らせるためGameInfo入りのパケットにする
 					Packet packet = new Packet(request, gameData.getGameInfoToSend(agent));
 					message = DataConverter.getInstance().convert(packet);
@@ -289,8 +282,8 @@ public class TcpipServer implements GameServer {
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
 			bw.append(message);
 			bw.append("\n");
-    		bw.flush();
-		}catch(IOException e){
+			bw.flush();
+		} catch (IOException e) {
 //			serverLogger.severe(e.getMessage());
 			throw new LostClientException(e, agent);
 		}
@@ -298,6 +291,7 @@ public class TcpipServer implements GameServer {
 
 	/**
 	 * delete talks already sent
+	 * 
 	 * @param agent
 	 * @param list
 	 * @param lastIdxMap
@@ -305,7 +299,7 @@ public class TcpipServer implements GameServer {
 	 */
 	protected List<TalkToSend> minimize(Agent agent, List<TalkToSend> list, Map<Agent, Integer> lastIdxMap) {
 		int lastIdx = list.size();
-		if(lastIdxMap.containsKey(agent) && list.size() >= lastIdxMap.get(agent)){
+		if (lastIdxMap.containsKey(agent) && list.size() >= lastIdxMap.get(agent)) {
 			list = list.subList(lastIdxMap.get(agent), list.size());
 		}
 		lastIdxMap.put(agent, lastIdx);
@@ -314,11 +308,12 @@ public class TcpipServer implements GameServer {
 
 	/**
 	 * send data to client
+	 * 
 	 * @param agent
 	 * @param sendText
 	 */
-	protected Object request(Agent agent, Request request){
-		try{
+	protected Object request(Agent agent, Request request) {
+		try {
 			Socket sock = socketAgentMap.getKey(agent);
 			final BufferedReader br = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 			send(agent, request);
@@ -328,8 +323,8 @@ public class TcpipServer implements GameServer {
 			RequestReadCallable task = new RequestReadCallable(br);
 			try {
 				Future<String> future = pool.submit(task);
-				try{
-					line = future.get(timeLimit, TimeUnit.MILLISECONDS);	//1秒でタイムアウト
+				try {
+					line = future.get(timeLimit, TimeUnit.MILLISECONDS); // 1秒でタイムアウト
 				} catch (InterruptedException | ExecutionException e) {
 					throw e;
 				} catch (TimeoutException e) {
@@ -341,12 +336,12 @@ public class TcpipServer implements GameServer {
 			}
 
 //	        String line = br.readLine();
-			if(!task.isSuccess()){
+			if (!task.isSuccess()) {
 				throw task.getIOException();
 			}
 //			serverLogger.info("<="+agent+":"+line);
 
-			if(line != null && line.isEmpty()){
+			if (line != null && line.isEmpty()) {
 				line = null;
 			}
 			if (request == Request.NAME || request == Request.ROLE) {
@@ -356,21 +351,18 @@ public class TcpipServer implements GameServer {
 			} else if (request == Request.ATTACK || request == Request.DIVINE || request == Request.GUARD
 					|| request == Request.VOTE) {
 				Agent target = DataConverter.getInstance().toAgent(line);
-				if(gameData.contains(target)) {
+				if (gameData.contains(target)) {
 					return target;
-				}
-				else {
+				} else {
 					return null;
 				}
-	        }
-	        else{
-	        	return null;
-	        }
+			} else {
+				return null;
+			}
 
-
-		}catch(InterruptedException | ExecutionException | IOException e){
-			throw new LostClientException("Lost connection with "+agent+"\t"+getName(agent), e, agent);
-		}catch(TimeoutException e){
+		} catch (InterruptedException | ExecutionException | IOException e) {
+			throw new LostClientException("Lost connection with " + agent + "\t" + getName(agent), e, agent);
+		} catch (TimeoutException e) {
 			throw new LostClientException(String.format("Timeout %s(%s) %s", agent, getName(agent), request), e, agent);
 		}
 	}
@@ -386,68 +378,64 @@ public class TcpipServer implements GameServer {
 	}
 
 	@Override
-	public void dayFinish(Agent agent){
+	public void dayFinish(Agent agent) {
 		send(agent, Request.DAILY_FINISH);
 	}
 
 	@Override
 	public String requestName(Agent agent) {
-		if(nameMap.containsKey(agent)){
+		if (nameMap.containsKey(agent)) {
 			return nameMap.get(agent);
-		}
-		else{
-			String name = (String)request(agent, Request.NAME);
+		} else {
+			String name = (String) request(agent, Request.NAME);
 			nameMap.put(agent, name);
 			return name;
 		}
 	}
 
-
 	@Override
 	public Role requestRequestRole(Agent agent) {
-		String roleString = (String)request(agent, Request.ROLE);
-		try{
+		String roleString = (String) request(agent, Request.ROLE);
+		try {
 			return Role.valueOf(roleString);
-		}catch(IllegalArgumentException e){
+		} catch (IllegalArgumentException e) {
 			return null;
 		}
 	}
 
-
 	@Override
 	public String requestTalk(Agent agent) {
-		return (String)request(agent, Request.TALK);
+		return (String) request(agent, Request.TALK);
 	}
 
 	@Override
 	public String requestWhisper(Agent agent) {
-		return (String)request(agent, Request.WHISPER);
+		return (String) request(agent, Request.WHISPER);
 	}
 
 	@Override
 	public Agent requestVote(Agent agent) {
-		return (Agent)request(agent, Request.VOTE);
+		return (Agent) request(agent, Request.VOTE);
 //		return JSON.decode(result);
 	}
 
 	@Override
 	public Agent requestDivineTarget(Agent agent) {
-		return (Agent)request(agent, Request.DIVINE);
+		return (Agent) request(agent, Request.DIVINE);
 //		return JSON.decode(result);
 	}
 
 	@Override
 	public Agent requestGuardTarget(Agent agent) {
-		return (Agent)request(agent, Request.GUARD);
+		return (Agent) request(agent, Request.GUARD);
 //		return JSON.decode(result);
 	}
 
 	@Override
 	public Agent requestAttackTarget(Agent agent) {
-		return (Agent)request(agent, Request.ATTACK);
+		return (Agent) request(agent, Request.ATTACK);
 //		return JSON.decode(result);
 	}
-
 
 	@Override
 	public void finish(Agent agent) {
@@ -460,12 +448,10 @@ public class TcpipServer implements GameServer {
 		this.gameData = gameData;
 	}
 
-
 	@Override
 	public void setGameSetting(GameSetting gameSetting) {
 		this.gameSetting = gameSetting;
 	}
-
 
 	/**
 	 * @return isWaitForClient
@@ -482,15 +468,15 @@ public class TcpipServer implements GameServer {
 	}
 
 	@Override
-	public void close(){
+	public void close() {
 		try {
-			if(serverSocket != null && !serverSocket.isClosed()){
+			if (serverSocket != null && !serverSocket.isClosed()) {
 				serverSocket.close();
 			}
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-		for(Socket socket:socketAgentMap.keySet()){
+		for (Socket socket : socketAgentMap.keySet()) {
 			try {
 				socket.close();
 			} catch (IOException e) {
@@ -516,6 +502,7 @@ public class TcpipServer implements GameServer {
 
 	/**
 	 * add server listener
+	 * 
 	 * @param e
 	 * @return
 	 * @see java.util.Set#add(java.lang.Object)
@@ -526,6 +513,7 @@ public class TcpipServer implements GameServer {
 
 	/**
 	 * remove server listener
+	 * 
 	 * @param o
 	 * @return
 	 * @see java.util.Set#remove(java.lang.Object)
@@ -552,33 +540,32 @@ public class TcpipServer implements GameServer {
 		this.timeLimit = timeLimit;
 	}
 
-
 }
-
 
 class RequestReadCallable implements Callable<String> {
 	private final BufferedReader br;
 	IOException ioException;
+
 	RequestReadCallable(BufferedReader br) {
 		this.br = br;
 	}
 
 	@Override
 	public String call() {
-		try{
+		try {
 			String line = br.readLine();
 			return line;
-		}catch(IOException e){
+		} catch (IOException e) {
 			ioException = e;
 			return null;
 		}
 	}
 
-	public boolean isSuccess(){
+	public boolean isSuccess() {
 		return ioException == null;
 	}
 
-	public IOException getIOException(){
+	public IOException getIOException() {
 		return ioException;
 	}
 }
